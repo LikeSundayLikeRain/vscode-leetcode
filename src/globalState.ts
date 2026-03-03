@@ -5,6 +5,7 @@ import * as vscode from "vscode";
 
 const CookieKey = "leetcode-cookie";
 const UserStatusKey = "leetcode-user-status";
+const FollowModeKey = "leetcode-follow-mode";
 
 export type UserDataType = {
     isSignedIn: boolean;
@@ -40,6 +41,14 @@ class GlobalState {
 
     public getUserStatus(): UserDataType | undefined {
         return this._userStatus ?? this._state.get(UserStatusKey);
+    }
+
+    public setFollowMode(enabled: boolean): Thenable<void> {
+        return this._state.update(FollowModeKey, enabled);
+    }
+
+    public getFollowMode(): boolean {
+        return this._state.get<boolean>(FollowModeKey, false);
     }
 
     public removeCookie(): void {

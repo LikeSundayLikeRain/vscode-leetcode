@@ -25,6 +25,7 @@ import { leetCodeSolutionProvider } from "./webview/leetCodeSolutionProvider";
 import { leetCodeSubmissionProvider } from "./webview/leetCodeSubmissionProvider";
 import { markdownEngine } from "./webview/markdownEngine";
 import TrackData from "./utils/trackingUtils";
+import { followMode } from "./followMode";
 import { globalState } from "./globalState";
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
@@ -40,6 +41,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
         leetCodeTreeDataProvider.initialize(context);
         globalState.initialize(context);
+        followMode.initialize();
 
         context.subscriptions.push(
             leetCodeStatusBarController,
@@ -50,6 +52,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             leetCodeExecutor,
             markdownEngine,
             codeLensController,
+            followMode,
             explorerNodeManager,
             vscode.window.registerFileDecorationProvider(leetCodeTreeItemDecorationProvider),
             vscode.window.createTreeView("leetCodeExplorer", { treeDataProvider: leetCodeTreeDataProvider, showCollapseAll: true }),
@@ -97,7 +100,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             vscode.commands.registerCommand("leetcode.switchDefaultLanguage", () => switchDefaultLanguage()),
             vscode.commands.registerCommand("leetcode.addFavorite", (node: LeetCodeNode) => star.addFavorite(node)),
             vscode.commands.registerCommand("leetcode.removeFavorite", (node: LeetCodeNode) => star.removeFavorite(node)),
-            vscode.commands.registerCommand("leetcode.problems.sort", () => plugin.switchSortingStrategy())
+            vscode.commands.registerCommand("leetcode.problems.sort", () => plugin.switchSortingStrategy()),
+            vscode.commands.registerCommand("leetcode.followMode", () => followMode.toggle()),
         );
 
         await leetCodeExecutor.switchEndpoint(plugin.getLeetCodeEndpoint());
