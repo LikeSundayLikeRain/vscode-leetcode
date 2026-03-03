@@ -22,6 +22,10 @@ class LeetCodePreviewProvider extends LeetCodeWebview {
         this.showWebviewInternal();
     }
 
+    public isShowingProblem(id: string): boolean {
+        return this.panel !== undefined && this.node?.id === id;
+    }
+
     protected getWebviewOption(): ILeetCodeWebviewOption {
         const { viewColumn, preserveFocus } = getWebviewViewColumn();
         if (viewColumn === ViewColumn.One) {

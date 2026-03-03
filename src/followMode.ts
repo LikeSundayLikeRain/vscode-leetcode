@@ -86,6 +86,9 @@ class FollowMode implements Disposable {
             if (!id) {
                 return;
             }
+            if (leetCodePreviewProvider.isShowingProblem(id)) {
+                return;
+            }
             const node = explorerNodeManager.getNodeById(id);
             if (!node) {
                 return;
