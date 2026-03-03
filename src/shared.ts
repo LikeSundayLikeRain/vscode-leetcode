@@ -112,6 +112,12 @@ export enum DescriptionConfiguration {
     None = "None",
 }
 
+export enum WebviewPosition {
+    Left = "Left",
+    Right = "Right",
+    Current = "Current",
+}
+
 export const leetcodeHasInited: string = "leetcode.hasInited";
 
 export enum SortingStrategy {

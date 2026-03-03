@@ -1,8 +1,8 @@
 // Copyright (c) jdneo. All rights reserved.
 // Licensed under the MIT license.
 
-import { workspace, WorkspaceConfiguration } from "vscode";
-import { DescriptionConfiguration } from "../shared";
+import { ViewColumn, workspace, WorkspaceConfiguration } from "vscode";
+import { DescriptionConfiguration, WebviewPosition } from "../shared";
 
 export function getWorkspaceConfiguration(): WorkspaceConfiguration {
     return workspace.getConfiguration("leetcode");
@@ -10,6 +10,10 @@ export function getWorkspaceConfiguration(): WorkspaceConfiguration {
 
 export function shouldHideSolvedProblem(): boolean {
     return getWorkspaceConfiguration().get<boolean>("hideSolved", false);
+}
+
+export function shouldHideLockedProblem(): boolean {
+    return getWorkspaceConfiguration().get<boolean>("hideLocked", false);
 }
 
 export function getWorkspaceFolder(): string {
@@ -60,6 +64,28 @@ export function getDescriptionConfiguration(): IDescriptionConfiguration {
     }
 
     return config;
+}
+
+export function getWebviewViewColumn(): { viewColumn: ViewColumn; preserveFocus: boolean } {
+    const config = getWorkspaceConfiguration();
+    let position = config.get<string>("webviewPosition");
+
+    // Migration: fall back to deprecated enableSideMode if webviewPosition is unset or invalid
+    const validPositions: string[] = Object.values(WebviewPosition);
+    if (!position || !validPositions.includes(position)) {
+        const enableSideMode = config.get<boolean>("enableSideMode", true);
+        position = enableSideMode ? WebviewPosition.Right : WebviewPosition.Left;
+    }
+
+    switch (position) {
+        case WebviewPosition.Left:
+            return { viewColumn: ViewColumn.One, preserveFocus: false };
+        case WebviewPosition.Current:
+            return { viewColumn: ViewColumn.Active, preserveFocus: false };
+        case WebviewPosition.Right:
+        default:
+            return { viewColumn: ViewColumn.Two, preserveFocus: true };
+    }
 }
 
 export interface IDescriptionConfiguration {

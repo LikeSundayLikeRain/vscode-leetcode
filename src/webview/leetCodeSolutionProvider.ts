@@ -2,7 +2,7 @@
 // Licensed under the MIT license.
 
 import { ViewColumn } from "vscode";
-import { leetCodePreviewProvider } from "./leetCodePreviewProvider";
+import { getWebviewViewColumn } from "../utils/settingUtils";
 import { ILeetCodeWebviewOption, LeetCodeWebview } from "./LeetCodeWebview";
 import { markdownEngine } from "./markdownEngine";
 
@@ -18,18 +18,18 @@ class LeetCodeSolutionProvider extends LeetCodeWebview {
     }
 
     protected getWebviewOption(): ILeetCodeWebviewOption {
-        if (leetCodePreviewProvider.isSideMode()) {
-            return {
-                title: "Solution",
-                viewColumn: ViewColumn.Two,
-                preserveFocus: true,
-            };
-        } else {
+        const { viewColumn, preserveFocus } = getWebviewViewColumn();
+        if (viewColumn === ViewColumn.One) {
             return {
                 title: `Solution: ${this.problemName}`,
-                viewColumn: ViewColumn.One,
+                viewColumn,
             };
         }
+        return {
+            title: "Solution",
+            viewColumn,
+            preserveFocus,
+        };
     }
 
     protected getWebviewContent(): string {

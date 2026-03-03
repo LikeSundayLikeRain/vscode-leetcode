@@ -4,6 +4,7 @@
 import { commands, ViewColumn } from "vscode";
 import { getLeetCodeEndpoint } from "../commands/plugin";
 import { Endpoint, IProblem } from "../shared";
+import { getWebviewViewColumn } from "../utils/settingUtils";
 import { ILeetCodeWebviewOption, LeetCodeWebview } from "./LeetCodeWebview";
 import { markdownEngine } from "./markdownEngine";
 
@@ -11,35 +12,33 @@ class LeetCodePreviewProvider extends LeetCodeWebview {
     protected readonly viewType: string = "leetcode.preview";
     private node: IProblem;
     private description: IDescription;
-    private sideMode: boolean = false;
+    private currentViewColumn: ViewColumn;
 
-    public isSideMode(): boolean {
-        return this.sideMode;
-    }
-
-    public show(descString: string, node: IProblem, isSideMode: boolean = false): void {
+    public show(descString: string, node: IProblem): void {
         this.description = this.parseDescription(descString, node);
         this.node = node;
-        this.sideMode = isSideMode;
+        const { viewColumn } = getWebviewViewColumn();
+        this.currentViewColumn = viewColumn;
         this.showWebviewInternal();
     }
 
     protected getWebviewOption(): ILeetCodeWebviewOption {
-        if (!this.sideMode) {
+        const { viewColumn, preserveFocus } = getWebviewViewColumn();
+        if (viewColumn === ViewColumn.One) {
             return {
                 title: `${this.node.name}: Preview`,
-                viewColumn: ViewColumn.One,
-            };
-        } else {
-            return {
-                title: "Description",
-                viewColumn: ViewColumn.Two,
-                preserveFocus: true,
+                viewColumn,
             };
         }
+        return {
+            title: "Description",
+            viewColumn,
+            preserveFocus,
+        };
     }
 
     protected getWebviewContent(): string {
+        const showButton = this.currentViewColumn === ViewColumn.One;
         const button: { element: string; script: string; style: string } = {
             element: `<button id="solve">Code Now</button>`,
             script: `const button = document.getElementById('solve');
@@ -93,7 +92,7 @@ class LeetCodePreviewProvider extends LeetCodeWebview {
             <head>
                 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https:; script-src vscode-resource: 'unsafe-inline'; style-src vscode-resource: 'unsafe-inline';"/>
                 ${markdownEngine.getStyles()}
-                ${!this.sideMode ? button.style : ""}
+                ${showButton ? button.style : ""}
                 <style>
                     code { white-space: pre-wrap; }
                 </style>
@@ -106,19 +105,14 @@ class LeetCodePreviewProvider extends LeetCodeWebview {
                 ${body}
                 <hr />
                 ${links}
-                ${!this.sideMode ? button.element : ""}
+                ${showButton ? button.element : ""}
                 <script>
                     const vscode = acquireVsCodeApi();
-                    ${!this.sideMode ? button.script : ""}
+                    ${showButton ? button.script : ""}
                 </script>
             </body>
             </html>
         `;
-    }
-
-    protected onDidDisposeWebview(): void {
-        super.onDidDisposeWebview();
-        this.sideMode = false;
     }
 
     protected async onDidReceiveMessage(message: IWebViewMessage): Promise<void> {

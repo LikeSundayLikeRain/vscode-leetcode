@@ -299,6 +299,12 @@
                         "scope": "application",
                         "description": "Hide solved problems."
                     },
+                    "leetcode.hideLocked": {
+                        "type": "boolean",
+                        "default": false,
+                        "scope": "application",
+                        "description": "Hide locked (premium) problems."
+                    },
                     "leetcode.defaultLanguage": {
                         "type": "string",
                         "enum": [
@@ -675,7 +681,24 @@
                         "type": "boolean",
                         "default": true,
                         "scope": "application",
-                        "description": "Determine whether to group all webview pages into the second editor column when solving problems."
+                        "description": "Deprecated: Use leetcode.webviewPosition instead.",
+                        "deprecationMessage": "This setting is deprecated. Please use leetcode.webviewPosition instead."
+                    },
+                    "leetcode.webviewPosition": {
+                        "type": "string",
+                        "default": "Right",
+                        "scope": "application",
+                        "enum": [
+                            "Left",
+                            "Right",
+                            "Current"
+                        ],
+                        "enumDescriptions": [
+                            "Show webview in the first (left) editor column",
+                            "Show webview in the second (right) editor column",
+                            "Show webview in the currently active editor column"
+                        ],
+                        "description": "Specify where to show webview pages when solving problems."
                     },
                     "leetcode.nodePath": {
                         "type": "string",

@@ -6,7 +6,7 @@ import { Disposable } from "vscode";
 import * as list from "../commands/list";
 import { getSortingStrategy } from "../commands/plugin";
 import { Category, defaultProblem, ProblemState, SortingStrategy } from "../shared";
-import { shouldHideSolvedProblem } from "../utils/settingUtils";
+import { shouldHideSolvedProblem, shouldHideLockedProblem } from "../utils/settingUtils";
 import { LeetCodeNode } from "./LeetCodeNode";
 
 class ExplorerNodeManager implements Disposable {
@@ -17,8 +17,12 @@ class ExplorerNodeManager implements Disposable {
     public async refreshCache(): Promise<void> {
         this.dispose();
         const shouldHideSolved: boolean = shouldHideSolvedProblem();
+        const shouldHideLocked: boolean = shouldHideLockedProblem();
         for (const problem of await list.listProblems()) {
             if (shouldHideSolved && problem.state === ProblemState.AC) {
+                continue;
+            }
+            if (shouldHideLocked && problem.locked) {
                 continue;
             }
             this.explorerNodeMap.set(problem.id, new LeetCodeNode(problem));

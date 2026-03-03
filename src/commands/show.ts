@@ -31,7 +31,7 @@ import * as list from "./list";
 import { getLeetCodeEndpoint } from "./plugin";
 import { globalState } from "../globalState";
 
-export async function previewProblem(input: IProblem | vscode.Uri, isSideMode: boolean = false): Promise<void> {
+export async function previewProblem(input: IProblem | vscode.Uri): Promise<void> {
     let node: IProblem;
 
     if (input instanceof vscode.Uri) {
@@ -47,8 +47,6 @@ export async function previewProblem(input: IProblem | vscode.Uri, isSideMode: b
             return;
         }
         node = cachedNode;
-        // Move the preview page aside if it's triggered from Code Lens
-        isSideMode = true;
     } else {
         node = input;
         const { isPremium } = globalState.getUserStatus() ?? {};
@@ -61,7 +59,7 @@ export async function previewProblem(input: IProblem | vscode.Uri, isSideMode: b
 
     const needTranslation: boolean = settingUtils.shouldUseEndpointTranslation();
     const descString: string = await leetCodeExecutor.getDescription(node.id, needTranslation);
-    leetCodePreviewProvider.show(descString, node, isSideMode);
+    leetCodePreviewProvider.show(descString, node);
 }
 
 export async function pickOne(): Promise<void> {
@@ -191,10 +189,12 @@ async function showProblemInternal(node: IProblem): Promise<void> {
         const needTranslation: boolean = settingUtils.shouldUseEndpointTranslation();
 
         await leetCodeExecutor.showProblem(node, language, finalPath, descriptionConfig.showInComment, needTranslation);
+        const { viewColumn: webviewCol } = settingUtils.getWebviewViewColumn();
+        const codeViewColumn = webviewCol === vscode.ViewColumn.One ? vscode.ViewColumn.Two : vscode.ViewColumn.One;
         const promises: any[] = [
             vscode.window.showTextDocument(vscode.Uri.file(finalPath), {
                 preview: false,
-                viewColumn: vscode.ViewColumn.One,
+                viewColumn: codeViewColumn,
             }),
             promptHintMessage(
                 "hint.commentDescription",
@@ -214,7 +214,7 @@ async function showProblemInternal(node: IProblem): Promise<void> {
 }
 
 async function showDescriptionView(node: IProblem): Promise<void> {
-    return previewProblem(node, vscode.workspace.getConfiguration("leetcode").get<boolean>("enableSideMode", true));
+    return previewProblem(node);
 }
 async function parseProblemsToPicks(p: Promise<IProblem[]>): Promise<Array<IQuickItemEx<IProblem>>> {
     return new Promise(async (resolve: (res: Array<IQuickItemEx<IProblem>>) => void): Promise<void> => {

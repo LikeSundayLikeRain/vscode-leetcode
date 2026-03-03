@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 
 import { ViewColumn } from "vscode";
+import { getWebviewViewColumn } from "../utils/settingUtils";
 import { openKeybindingsEditor, promptHintMessage } from "../utils/uiUtils";
 import { ILeetCodeWebviewOption, LeetCodeWebview } from "./LeetCodeWebview";
 import { markdownEngine } from "./markdownEngine";
@@ -18,9 +19,10 @@ class LeetCodeSubmissionProvider extends LeetCodeWebview {
     }
 
     protected getWebviewOption(): ILeetCodeWebviewOption {
+        const { viewColumn } = getWebviewViewColumn();
         return {
             title: "Submission",
-            viewColumn: ViewColumn.Two,
+            viewColumn: viewColumn === ViewColumn.One ? ViewColumn.One : ViewColumn.Two,
         };
     }
 
