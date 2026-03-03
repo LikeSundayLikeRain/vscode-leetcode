@@ -8,6 +8,7 @@ import * as path from "path";
 import * as requireFromString from "require-from-string";
 import { ExtensionContext } from "vscode";
 import { ConfigurationChangeEvent, Disposable, MessageItem, window, workspace, WorkspaceConfiguration } from "vscode";
+import { globalState } from "./globalState";
 import { Endpoint, IProblem, leetcodeHasInited, supportedPlugins } from "./shared";
 import { executeCommand, executeCommandWithProgress } from "./utils/cpUtils";
 import { DialogOptions, openUrl } from "./utils/uiUtils";
@@ -138,12 +139,24 @@ class LeetCodeExecutor implements Disposable {
         return solution;
     }
 
-    public async getDescription(problemNodeId: string, needTranslation: boolean): Promise<string> {
+    public async getDescription(problemNodeId: string, needTranslation: boolean, forceRefresh?: boolean): Promise<string> {
+        const cacheKey = `${problemNodeId}:${needTranslation ? 1 : 0}`;
+        const ttlMs = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+        if (!forceRefresh) {
+            const cached = globalState.getDescCache(cacheKey, ttlMs);
+            if (cached) {
+                return cached;
+            }
+        }
+
         const cmd: string[] = [await this.getLeetCodeBinaryPath(), "show", problemNodeId, "-x"];
         if (!needTranslation) {
             cmd.push("-T");
         }
-        return await this.executeCommandWithProgressEx("Fetching problem description...", this.nodeExecutable, cmd);
+        const desc = await this.executeCommandWithProgressEx("Fetching problem description...", this.nodeExecutable, cmd);
+        globalState.setDescCache(cacheKey, desc);
+        return desc;
     }
 
     public async listSessions(): Promise<string> {

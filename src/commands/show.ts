@@ -58,7 +58,7 @@ export async function previewProblem(input: IProblem | vscode.Uri): Promise<void
     }
 
     const needTranslation: boolean = settingUtils.shouldUseEndpointTranslation();
-    const descString: string = await leetCodeExecutor.getDescription(node.id, needTranslation);
+    const descString: string = await leetCodeExecutor.getDescription(node.id, needTranslation, true);
     leetCodePreviewProvider.show(descString, node);
 }
 
