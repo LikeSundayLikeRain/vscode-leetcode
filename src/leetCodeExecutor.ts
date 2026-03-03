@@ -173,9 +173,14 @@ class LeetCodeExecutor implements Disposable {
         }
     }
 
-    public async testSolution(filePath: string, testString?: string): Promise<string> {
-        if (testString) {
-            return await this.executeCommandWithProgressEx("Submitting to LeetCode...", this.nodeExecutable, [await this.getLeetCodeBinaryPath(), "test", `"${filePath}"`, "-t", `${testString}`]);
+    public async testSolution(filePath: string, testInput?: string): Promise<string> {
+        if (testInput) {
+            // Use stdin (-i flag) to bypass shell quoting issues with test case strings
+            return await this.executeCommandWithProgressExStdin(
+                "Submitting to LeetCode...", this.nodeExecutable,
+                [await this.getLeetCodeBinaryPath(), "test", `"${filePath}"`, "-i"],
+                testInput,
+            );
         }
         return await this.executeCommandWithProgressEx("Submitting to LeetCode...", this.nodeExecutable, [await this.getLeetCodeBinaryPath(), "test", `"${filePath}"`]);
     }
@@ -234,6 +239,13 @@ class LeetCodeExecutor implements Disposable {
             return await executeCommandWithProgress(message, "wsl", [command].concat(args), options);
         }
         return await executeCommandWithProgress(message, command, args, options);
+    }
+
+    private async executeCommandWithProgressExStdin(message: string, command: string, args: string[], stdinData: string, options: cp.SpawnOptions = { shell: true }): Promise<string> {
+        if (wsl.useWsl()) {
+            return await executeCommandWithProgress(message, "wsl", [command].concat(args), options, stdinData);
+        }
+        return await executeCommandWithProgress(message, command, args, options, stdinData);
     }
 
     private async removeOldCache(): Promise<void> {

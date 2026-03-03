@@ -3,14 +3,17 @@
 
 import * as fse from "fs-extra";
 import * as vscode from "vscode";
+import { explorerNodeManager } from "../explorer/explorerNodeManager";
 import { leetCodeExecutor } from "../leetCodeExecutor";
 import { leetCodeManager } from "../leetCodeManager";
+import { queryExampleTestcases } from "../request/query-example-testcases";
+import { leetCodeChannel } from "../leetCodeChannel";
 import { IQuickItemEx, UserStatus } from "../shared";
-import { isWindows, usingCmd } from "../utils/osUtils";
+import { getNodeIdFromFile } from "../utils/problemUtils";
 import { DialogType, promptForOpenOutputChannel, showFileSelectDialog } from "../utils/uiUtils";
 import { getActiveFilePath } from "../utils/workspaceUtils";
-import * as wsl from "../utils/wslUtils";
 import { leetCodeSubmissionProvider } from "../webview/leetCodeSubmissionProvider";
+import { leetCodeTestInputProvider } from "../webview/leetCodeTestInputProvider";
 
 export async function testSolution(uri?: vscode.Uri): Promise<void> {
     try {
@@ -51,17 +54,30 @@ export async function testSolution(uri?: vscode.Uri): Promise<void> {
         let result: string | undefined;
         switch (choice.value) {
             case ":default":
+                try {
+                    // Get problem slug from file path
+                    const id: string = await getNodeIdFromFile(filePath);
+                    const node = explorerNodeManager.getNodeById(id);
+                    if (node) {
+                        // Derive LeetCode slug from name (custom logic preserves "3sum" format; _.kebabCase would produce "3-sum")
+                        const slug = node.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+                        if (!slug) { break; }
+                        const testcases: string[] = await queryExampleTestcases(slug);
+                        if (testcases.length > 0) {
+                            result = await leetCodeExecutor.testSolution(filePath, testcases.join("\n"));
+                            break;
+                        }
+                    }
+                } catch (error) {
+                    leetCodeChannel.appendLine(`Failed to fetch example test cases: ${error}`);
+                }
+                // Fallback: use CLI default (single test case)
                 result = await leetCodeExecutor.testSolution(filePath);
                 break;
             case ":direct":
-                const testString: string | undefined = await vscode.window.showInputBox({
-                    prompt: "Enter the test cases.",
-                    validateInput: (s: string): string | undefined => s && s.trim() ? undefined : "Test case must not be empty.",
-                    placeHolder: "Example: [1,2,3]\\n4",
-                    ignoreFocusOut: true,
-                });
+                const testString: string | undefined = await leetCodeTestInputProvider.getTestInput();
                 if (testString) {
-                    result = await leetCodeExecutor.testSolution(filePath, parseTestString(testString));
+                    result = await leetCodeExecutor.testSolution(filePath, testString);
                 }
                 break;
             case ":file":
@@ -69,7 +85,7 @@ export async function testSolution(uri?: vscode.Uri): Promise<void> {
                 if (testFile && testFile.length) {
                     const input: string = (await fse.readFile(testFile[0].fsPath, "utf-8")).trim();
                     if (input) {
-                        result = await leetCodeExecutor.testSolution(filePath, parseTestString(input.replace(/\r?\n/g, "\\n")));
+                        result = await leetCodeExecutor.testSolution(filePath, input);
                     } else {
                         vscode.window.showErrorMessage("The selected test file must not be empty.");
                     }
@@ -87,16 +103,3 @@ export async function testSolution(uri?: vscode.Uri): Promise<void> {
     }
 }
 
-function parseTestString(test: string): string {
-    if (wsl.useWsl() || !isWindows()) {
-        return `'${test}'`;
-    }
-
-    // In windows and not using WSL
-    if (usingCmd()) {
-        return `"${test.replace(/"/g, '\\"')}"`;
-    } else {
-        // Assume using PowerShell
-        return `'${test.replace(/"/g, '\\"')}'`;
-    }
-}

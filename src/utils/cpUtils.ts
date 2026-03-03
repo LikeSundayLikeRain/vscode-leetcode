@@ -9,7 +9,7 @@ interface IExecError extends Error {
     result?: string;
 }
 
-export async function executeCommand(command: string, args: string[], options: cp.SpawnOptions = { shell: true }): Promise<string> {
+export async function executeCommand(command: string, args: string[], options: cp.SpawnOptions = { shell: true }, stdinData?: string): Promise<string> {
     return new Promise((resolve: (res: string) => void, reject: (e: Error) => void): void => {
         let result: string = "";
 
@@ -36,16 +36,21 @@ export async function executeCommand(command: string, args: string[], options: c
                 resolve(result);
             }
         });
+
+        if (stdinData !== undefined) {
+            childProc.stdin?.write(stdinData);
+            childProc.stdin?.end();
+        }
     });
 }
 
-export async function executeCommandWithProgress(message: string, command: string, args: string[], options: cp.SpawnOptions = { shell: true }): Promise<string> {
+export async function executeCommandWithProgress(message: string, command: string, args: string[], options: cp.SpawnOptions = { shell: true }, stdinData?: string): Promise<string> {
     let result: string = "";
     await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification }, async (p: vscode.Progress<{}>) => {
         return new Promise<void>(async (resolve: () => void, reject: (e: Error) => void): Promise<void> => {
             p.report({ message });
             try {
-                result = await executeCommand(command, args, options);
+                result = await executeCommand(command, args, options, stdinData);
                 resolve();
             } catch (e) {
                 reject(e);
